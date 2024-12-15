@@ -1,4 +1,4 @@
-# Avahi Docker Image
+# A fork of Avahi Docker Image for unraid implementation
 
 Docker image for the Avahi mDNS/DNS-SD daemon. Built on Alpine Linux to make the image as small as possible. Highly configurable through environment variables to support most usecases which need an Avahi Daemon.
 
@@ -12,6 +12,8 @@ docker run flungo/avahi
 
 ## Environment variables
 
+Review avahi-daemon ManPages:
+[https://linux.die.net/man/5/avahi-daemon.conf](https://linux.die.net/man/5/avahi-daemon.conf)
 Environment variables are made available for all of the options of `avahi-daemon.conf`. The variable names are in the format `<SECTION>_<OPTION>` where `<SECTION>` is the capitalised section name from the configuration file and `<OPTION>` is the capitalised option name with `-` replaced by `_`. The table below outlines the available options:
 
 | Section     | Option                            | Variable                                  |
