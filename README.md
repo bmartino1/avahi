@@ -1,6 +1,6 @@
 # A fork of Avahi Docker Image for unraid implementation
 
-Docker image for the Avahi mDNS/DNS-SD daemon. Built on Alpine Linux to make the image as small as possible. Highly configurable through environment variables to support most usecases which need an Avahi Daemon.
+Docker image for the Avahi mDNS/DNS-SD daemon. Built on Dewbian slim Linux to make the image as small as possible. Highly configurable through environment variables to support most usecases which need an Avahi Daemon.
 
 ## Usage
 
