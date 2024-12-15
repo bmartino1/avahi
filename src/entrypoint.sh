@@ -4,20 +4,17 @@ if [ "${DEBUG}" == "true" ]; then
   set -x
 fi
 
-AUG_BASE="/etc/avahi/avahi-daemon.conf"
+CONFIG_FILE="/etc/avahi/avahi-daemon.conf"
 
 avahi_set() {
   if [ $# -lt 3 ]; then
     >&2 echo "Usage: avahi_set SECTION KEY VALUE"
     return 1
   fi
-  augtool set "${AUG_BASE}/$1/$2" "$3"
+  sed -i "/^\[$1\]/,/^\[/{s/^$2=.*/$2=$3/}" "$CONFIG_FILE"
 }
 
-# Default settings
-SERVER_ENABLE_DBUS=${SERVER_ENABLE_DBUS:-no}
-
-# Configure Avahi settings using environment variables
+# Apply environment variable configurations
 configure_section() {
   local section=$1
   local keys=($(env | grep "^${section}_" | cut -d= -f1))
