@@ -1,19 +1,21 @@
-# Use latest Alpine Linux with glibc for compatibility
-FROM frolvlad/alpine-glibc:latest
+# Use Debian Slim as the base image
+FROM debian:bookworm-slim
 
-# Install necessary packages
-RUN apk add --no-cache \
-    avahi \
-    augeas \
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    avahi-daemon \
+    libnss-mdns \
+    avahi-utils \
     dbus \
-    avahi-tools \
     bash \
-    tzdata
+    tzdata \
+    augeas-tools && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Configure Generic nsswitch.conf for mDNS support (without nss-mdns)
-RUN echo "hosts: files dns mdns4_minimal [NOTFOUND=return] mdns4" > /etc/nsswitch.conf
+# Configure nsswitch.conf for mDNS support
+RUN echo "hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4" > /etc/nsswitch.conf
 
-# Add the entrypoint script
+# Add and fix permissions for the entrypoint script
 ADD entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh
 
@@ -21,4 +23,4 @@ RUN chmod +x /opt/entrypoint.sh
 EXPOSE 5353/udp
 
 # Define entrypoint
-ENTRYPOINT ["/opt/entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/opt/entrypoint.sh"]
