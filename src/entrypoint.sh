@@ -38,6 +38,13 @@ if ! pgrep -x "dbus-daemon" >/dev/null; then
   export DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
 fi
 
+# Stop Avahi Daemon if running
+if pgrep avahi-daemon >/dev/null; then
+  echo "Stopping running Avahi Daemon..."
+  pkill avahi-daemon
+  sleep 2
+fi
+
 # Function to set Avahi configuration using Augeas
 avahi_set() {
   if [ $# -lt 3 ]; then
@@ -47,13 +54,6 @@ avahi_set() {
   echo "Setting Avahi config: $1/$2=$3"
   augtool set "${AUG_BASE}/$1/$2" "$3" || echo "Failed to set $1/$2"
 }
-
-# Stop Avahi Daemon if running
-if pgrep avahi-daemon >/dev/null; then
-  echo "Stopping running Avahi Daemon..."
-  pkill avahi-daemon
-  sleep 2
-fi
 
 # Read and log all environment variables related to Avahi
 for var in $(env | grep -E '^SERVER_|^WIDE_AREA_|^PUBLISH_|^REFLECTOR_|^RLIMITS_'); do
@@ -75,6 +75,7 @@ apply_config() {
 }
 
 # Define and Apply Configuration Mappings
+
 declare -A SERVER_CONFIGS=(
   ["host-name"]="${SERVER_HOST_NAME}"
   ["domain-name"]="${SERVER_DOMAIN_NAME}"
@@ -150,9 +151,12 @@ if [ -n "$(env | grep -E '^SERVER_|^WIDE_AREA_|^PUBLISH_|^REFLECTOR_|^RLIMITS_')
 else
   echo "No Docker variables detected. Starting with default configuration."
 fi
-if [ $# -eq 0 ] || [[ "$1" == -* ]]; then
-  exec avahi-daemon --no-drop-root --debug "$@"
+
+exec avahi-daemon --no-drop-root --debug "$@" &
+AVAHI_PID=$!
+if kill -0 "${AVAHI_PID}" 2>/dev/null; then
+  echo "Avahi Daemon started successfully with PID ${AVAHI_PID}."
 else
-  exec "$@"
+  echo "Failed to start Avahi Daemon."
 fi
-pgrep -x "avahi-daemon" && echo "Avahi Daemon is running." || echo "Avahi Daemon is not running."
+wait "${AVAHI_PID}"
