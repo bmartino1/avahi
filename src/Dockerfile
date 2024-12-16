@@ -20,7 +20,6 @@ RUN apt-get update && apt-get install -y \
     avahi-utils \
     mdns-scan \
     avahi-dnsconfd \
-    augeas-tools \
     curl \
     which \
     dnsutils \
@@ -31,9 +30,6 @@ RUN apt-get update && apt-get install -y \
 
 # Configure D-Bus service
 RUN mkdir -p /run/dbus && chmod 755 /run/dbus
-
-# Configure Augeas working folder
-RUN mkdir -p /files/etc/avahi && touch /files/etc/avahi/avahi-daemon.conf
 
 # Expose Avahi port (mDNS uses port 5353/udp)
 EXPOSE 5353/udp
