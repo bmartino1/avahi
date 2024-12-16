@@ -32,6 +32,9 @@ RUN apt-get update && apt-get install -y \
 # Configure D-Bus service
 RUN mkdir -p /run/dbus && chmod 755 /run/dbus
 
+# Configure Augeas working folder
+RUN mkdir -p /files/etc/avahi && touch /files/etc/avahi/avahi-daemon.conf
+
 # Expose Avahi port (mDNS uses port 5353/udp)
 EXPOSE 5353/udp
 
@@ -39,9 +42,6 @@ EXPOSE 5353/udp
 COPY entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh
 
-# Create startapp.sh to launch Avahi Daemon
-RUN echo '#!/bin/bash\nset -e\n# Ensure correct D-Bus setup\nmkdir -p /run/dbus && chmod 755 /run/dbus\nif [ -f /run/dbus/pid ]; then rm -f /run/dbus/pid; fi\ndbus-daemon --system --address=unix:path=/run/dbus/system_bus_socket &\nsleep 2\nexport DBUS_SYSTEM_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket\n# Start Avahi Daemon\necho "Starting Avahi Daemon..."\navahi-daemon --no-drop-root --debug\n' > /startapp.sh && chmod +x /startapp.sh
-
 # Set entrypoint and start the app
 ENTRYPOINT ["/bin/bash", "/opt/entrypoint.sh"]
-CMD ["/startapp.sh"]
+CMD ["avahi-daemon", "--no-drop-root", "--debug"]
