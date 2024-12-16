@@ -74,7 +74,7 @@ To reflect mDNS broadcasts between two docker networks (`net1` and `net2` in the
 docker run -d --name=mdns-reflector \
   --network net1 \
   -e REFLECTOR_ENABLE_REFLECTOR=yes \
-  flungo/avahi
+  bmmbmm01/avahi
 # Attach the container to the net2 network
 docker network connect net2 mdns-reflector
 ```
