@@ -4,13 +4,14 @@
 if [ "${DEBUG}" == "true" ]; then
   set -x
 fi
+#Docker Variable DEBUG value true
 
-# Configuration file path
+# Configuration file path in docker
 CONFIG_FILE="/etc/avahi/avahi-daemon.conf"
 
 # Ensure configuration file exists
 if [ ! -f "${CONFIG_FILE}" ]; then
-  echo "Configuration file missing. Creating default configuration file."
+  echo "Configuration file missing. Creating a default configuration file."
   touch "${CONFIG_FILE}" && echo "Created: ${CONFIG_FILE}" || echo "Failed to create ${CONFIG_FILE}"
 fi
 
@@ -57,9 +58,9 @@ declare -A CONFIG_MAP=(
   ["PUBLISH_PUBLISH_WORKSTATION"]="publish/publish-workstation"
   ["PUBLISH_PUBLISH_DOMAIN"]="publish/publish-domain"
   ["PUBLISH_PUBLISH_DNS_SERVERS"]="publish/publish-dns-servers"
-  ["PUBLISH_PUBLISH_RESOLV_CONF_DNS_SERVERS"]="publish/publish-resolv-conf-dns-servers"
+  ["PUBLISH_PUBLISH_RESOLV_CONF_DNS_SERVERS"]="publish/resolv-conf-dns-servers"
   ["PUBLISH_PUBLISH_AAAA_ON_IPV4"]="publish/publish-aaaa-on-ipv4"
-  ["PUBLISH_PUBLISH_A_ON_IPV6"]="publish/publish-a-on-ipv6"
+  ["PUBLISH_PUBLISH_A_ON_IPV6"]="publish/a-on-ipv6"
   ["RLIMITS_RLIMIT_AS"]="rlimits/rlimit-as"
   ["RLIMITS_RLIMIT_CORE"]="rlimits/rlimit-core"
   ["RLIMITS_RLIMIT_DATA"]="rlimits/rlimit-data"
@@ -70,12 +71,12 @@ declare -A CONFIG_MAP=(
 )
 
 # Create or Overwrite Config File
-echo "# Auto-generated Avahi Configuration" > "${CONFIG_FILE}"
+echo "# Docker Avahi Configuration" > "${CONFIG_FILE}"
 
 declare -A SECTION_MAP
 
 # Populate Config File from Docker Variables
-echo "Generating Avahi configuration file from Docker environment variables..."
+echo "Generating Config File Reviewing Docker Variables"
 for VAR in "${!CONFIG_MAP[@]}"; do
   CONFIG_KEY="${CONFIG_MAP[$VAR]}"
   SECTION="${CONFIG_KEY%%/*}"
@@ -84,21 +85,23 @@ for VAR in "${!CONFIG_MAP[@]}"; do
 
   if [ -n "${VALUE}" ]; then
     SECTION_MAP["${SECTION}"]+="\n${OPTION}=${VALUE}"
-    echo "Prepared ${CONFIG_KEY}=${VALUE} for ${SECTION} section"
   fi
 done
 
 # Write Config Sections to File
 for SECTION in "${!SECTION_MAP[@]}"; do
   echo -e "[${SECTION}]\n${SECTION_MAP[${SECTION}]}" >> "${CONFIG_FILE}"
-  echo "Wrote section [${SECTION}] to config file."
-
-
-# Display Final Config
-echo "Final Avahi Configuration:"
-cat "${CONFIG_FILE}" || echo "Failed to read configuration file"
-
 done
+
+# Display Final Config Once
+if [ -n "$(env | grep -E '^SERVER_|^WIDE_AREA_|^PUBLISH_|^REFLECTOR_|^RLIMITS_')" ]; then
+  echo "Avahi Daemon started with Docker environment variables."
+else
+  echo "No Docker variables detected. Starting with default configuration."
+fi
+
+echo "--- Avahi Configuration File ---"
+cat "${CONFIG_FILE}"
 
 # Cleanup stale PID file if necessary
 PID_FILE="/var/run/avahi-daemon/pid"
@@ -110,18 +113,19 @@ if [ -f "${PID_FILE}" ]; then
   fi
 fi
 
-# Execute provided command or run avahi-daemon by default
-if [ -n "$(env | grep -E '^SERVER_|^WIDE_AREA_|^PUBLISH_|^REFLECTOR_|^RLIMITS_')" ]; then
-  echo "Avahi Daemon started with Docker environment variables."
-else
-  echo "No Docker variables detected. Starting with default configuration."
+# Stop any existing Avahi daemon instances to prevent conflicts
+if pgrep -x "avahi-daemon" >/dev/null; then
+  echo "Stopping existing Avahi Daemon to prevent conflicts."
+  pkill -x "avahi-daemon"
 fi
 
-exec avahi-daemon --no-drop-root --debug "$@" &
+# Execute provided command or run avahi-daemon by default
+exec avahi-daemon --no-drop-root --debug &
 AVAHI_PID=$!
 if kill -0 "${AVAHI_PID}" 2>/dev/null; then
   echo "Avahi Daemon started successfully with PID ${AVAHI_PID}."
+  wait "${AVAHI_PID}"
 else
-  echo "Failed to start Avahi Daemon."
+  echo "Failed to start Avahi Daemon. Exiting."
+  exit 1
 fi
-wait "${AVAHI_PID}"
