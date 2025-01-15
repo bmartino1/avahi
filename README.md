@@ -7,7 +7,15 @@ Docker image for the Avahi mDNS/DNS-SD daemon. Built on Debian Linux to make the
 Basic usage consists of running the docker container with the appropriate environment variables and volumes to achieve your desired behaviour.
 
 ```shell
-docker run flungo/avahi
+docker pull bmmbmm01/avahi
+docker run -d --name='Avahi' --net='host' -e TZ="America/Chicago" -e HOST_CONTAINERNAME="Avahi" 'bmmbmm01/avahi:latest'
+
+#Example docker options for config
+  -e 'REFLECTOR_ENABLE_REFLECTOR'='yes'
+  -e 'SERVER_USE_IPV4'='yes'
+  -e 'WIDE_AREA_ENABLE_WIDE_AREA'='yes'
+  -e 'SERVER_USE_IPV6'='yes'
+  -e 'SERVER_ALLOW_INTERFACES'='eth0'
 ```
 
 ## Environment variables
